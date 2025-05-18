@@ -1,52 +1,40 @@
 #!/bin/bash
 
 # Script to symlink dotfiles from this repository to their correct locations.
-#
-# Usage:
-#   ./install.sh all                      (Installs all defined configurations)
-#   ./install.sh nvim tmux                (Installs only nvim and tmux)
-#   ./install.sh                          (Shows usage)
-#   ./install.sh --help                   (Shows usage)
+# Compatible with older Bash versions (avoids associative arrays).
 
-# Get the absolute path to the directory where this script is located
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # --- Configuration Definitions ---
-# Define your configurations here.
-# For each configuration, specify its 'name', its 'source' path relative to $DOTFILES_DIR,
-# and its 'target' symlink path in the $HOME directory.
+# Using indexed arrays for compatibility
+config_names=()
+config_sources=() # Note: these are now simple indexed arrays
+config_targets=()
 
-# Associative arrays for sources and targets
-# Format: config_sources["<name>"]="$DOTFILES_DIR/<path_in_dotfiles_repo>"
-#         config_targets["<name>"]="$HOME/<target_path_for_symlink>"
-declare -A config_sources
-declare -A config_targets
+# Helper function to add a configuration
+add_config() {
+    local name="$1"
+    local source_suffix="$2"
+    local target_suffix="$3"
+    config_names+=("$name")
+    config_sources+=("$DOTFILES_DIR/$source_suffix")
+    config_targets+=("$HOME/$target_suffix")
+}
 
-# Neovim Configuration
-config_sources["nvim"]="$DOTFILES_DIR/nvim"
-config_targets["nvim"]="$HOME/.config/nvim"
+# Define your configurations here:
+# add_config "<name>" "<path_in_dotfiles_repo>" "<target_path_for_symlink_in_home>"
+add_config "nvim" "nvim" ".config/nvim"
+add_config "tmux" "tmux.conf" ".tmux.conf"
+add_config "alacritty" "alacritty" ".config/alacritty" # Assumes ~/dotfiles/alacritty directory
 
-# Tmux Configuration
-config_sources["tmux"]="$DOTFILES_DIR/tmux.conf"
-config_targets["tmux"]="$HOME/.tmux.conf"
-
-# Zsh Configuration (Example - uncomment and adjust if you have it)
-# config_sources["zshrc"]="$DOTFILES_DIR/zshrc"
-# config_targets["zshrc"]="$HOME/.zshrc"
-
-# Git Configuration (Example - uncomment and adjust if you have it)
-# config_sources["gitconfig"]="$DOTFILES_DIR/gitconfig"
-# config_targets["gitconfig"]="$HOME/.gitconfig"
-
-# Add more configurations as needed following the pattern above.
+# Example for zshrc (uncomment and ensure ~/dotfiles/zshrc exists)
+# add_config "zshrc" "zshrc" ".zshrc"
 
 # --- End of Configuration Definitions ---
 
-# Get all defined configuration names (keys of the associative array)
-ALL_CONFIGS=("${!config_sources[@]}")
+ALL_CONFIGS=("${config_names[@]}")
 
 # --- Helper Functions ---
-
 usage() {
     echo "Dotfiles Installation Script"
     echo "----------------------------"
@@ -61,26 +49,26 @@ usage() {
     if [ ${#ALL_CONFIGS[@]} -eq 0 ]; then
         echo "  No configurations defined in the script."
     else
-        for cfg in "${ALL_CONFIGS[@]}"; do
-            echo "  - $cfg  (Source: ${config_sources[$cfg]}, Target: ${config_targets[$cfg]})"
+        for i in "${!config_names[@]}"; do
+            local name="${config_names[$i]}"
+            local src="${config_sources[$i]}"
+            local tgt="${config_targets[$i]}"
+            echo "  - $name  (Source: $src, Target: $tgt)"
         done
     fi
     exit 1
 }
 
-# Function to create a symlink, backing up existing file/dir if it's not already a symlink
 create_symlink() {
     local source_path="$1"
     local target_path="$2"
-    local config_name="$3" # For logging purposes
+    local config_name="$3"
 
-    # Check if the source file/directory actually exists in the dotfiles repo
     if [ ! -e "$source_path" ]; then
         echo "❌ ERROR: Source for '$config_name' configuration not found: $source_path"
-        return 1 # Failure
+        return 1
     fi
 
-    # Ensure the parent directory of the target link exists
     local target_parent_dir
     target_parent_dir=$(dirname "$target_path")
     if [ ! -d "$target_parent_dir" ]; then
@@ -88,19 +76,16 @@ create_symlink() {
         mkdir -p "$target_parent_dir"
     fi
 
-    # Check if the target is already a symlink
     if [ -L "$target_path" ]; then
         local current_link_target
         current_link_target=$(readlink "$target_path")
         if [ "$current_link_target" == "$source_path" ]; then
             echo "✔ Symlink for '$config_name' already correct: $target_path -> $source_path"
-            return 0 # Success
+            return 0
         else
             echo "⚠ Symlink for '$config_name' exists but points to '$current_link_target'. Relinking to '$source_path'."
-            # Remove the old symlink before creating a new one
             rm "$target_path"
         fi
-    # Check if the target exists and is not a symlink (it's a regular file or directory)
     elif [ -e "$target_path" ]; then
         local backup_path="${target_path}.bak.$(date +%Y%m%d%H%M%S)"
         echo "⚠ '$target_path' already exists and is not a symlink."
@@ -108,23 +93,19 @@ create_symlink() {
         mv "$target_path" "$backup_path"
     fi
 
-    # Create the symlink
     ln -sf "$source_path" "$target_path"
     if [ $? -eq 0 ]; then
         echo "✅ Symlinked '$config_name': $target_path -> $source_path"
-        return 0 # Success
+        return 0
     else
         echo "❌ ERROR: Failed to create symlink for '$config_name': $target_path"
-        return 1 # Failure
+        return 1
     fi
 }
 
 # --- Main Logic ---
-
-# Ensure $HOME/.config directory exists, as many tools place configs there
 mkdir -p "$HOME/.config"
-
-configs_to_process=()
+configs_to_process_names=() # Store names of configs to process
 
 if [ $# -eq 0 ]; then
     echo "No specific configurations requested."
@@ -136,48 +117,61 @@ if [ "$1" == "all" ]; then
         echo "No configurations defined. Nothing to install."
         exit 0
     fi
-    configs_to_process=("${ALL_CONFIGS[@]}")
+    configs_to_process_names=("${ALL_CONFIGS[@]}")
     echo "🚀 Installing all defined configurations..."
 elif [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
     usage
 else
-    for arg in "$@"; do
+    for arg_config_name in "$@"; do
         is_known_config=false
-        for known_cfg in "${ALL_CONFIGS[@]}"; do
-            if [ "$arg" == "$known_cfg" ]; then
-                configs_to_process+=("$arg")
+        for known_cfg_name in "${ALL_CONFIGS[@]}"; do
+            if [ "$arg_config_name" == "$known_cfg_name" ]; then
+                configs_to_process_names+=("$arg_config_name")
                 is_known_config=true
                 break
             fi
         done
         if [ "$is_known_config" = false ]; then
-            echo "❓ WARNING: Unknown configuration name '$arg'. Skipping."
+            echo "❓ WARNING: Unknown configuration name '$arg_config_name'. Skipping."
         fi
     done
 
-    if [ ${#configs_to_process[@]} -eq 0 ]; then
+    if [ ${#configs_to_process_names[@]} -eq 0 ]; then
         echo "No valid configurations selected to install from your input."
         usage
     fi
-    echo "🚀 Installing selected configurations: ${configs_to_process[*]}"
+    echo "🚀 Installing selected configurations: ${configs_to_process_names[*]}"
 fi
 
 echo "----------------------------------------"
-
 successful_installs=0
 failed_installs=0
 
-for config_name in "${configs_to_process[@]}"; do
-    echo "Processing '$config_name'..."
-    source="${config_sources[$config_name]}"
-    target="${config_targets[$config_name]}"
+for config_name_to_install in "${configs_to_process_names[@]}"; do
+    echo "Processing '$config_name_to_install'..."
+    # Find the index of this config name to get its source and target
+    current_source=""
+    current_target=""
+    for i in "${!config_names[@]}"; do
+        if [ "${config_names[$i]}" == "$config_name_to_install" ]; then
+            current_source="${config_sources[$i]}"
+            current_target="${config_targets[$i]}"
+            break
+        fi
+    done
 
-    if create_symlink "$source" "$target" "$config_name"; then
+    if [ -z "$current_source" ]; then # Should not happen if logic above is correct
+        echo "❌ ERROR: Could not find details for '$config_name_to_install'. Skipping."
+        failed_installs=$((failed_installs + 1))
+        continue
+    fi
+
+    if create_symlink "$current_source" "$current_target" "$config_name_to_install"; then
         successful_installs=$((successful_installs + 1))
     else
         failed_installs=$((failed_installs + 1))
     fi
-    echo "---" # Separator for readability
+    echo "---"
 done
 
 echo "----------------------------------------"
@@ -189,20 +183,18 @@ if [ "$failed_installs" -gt 0 ]; then
 fi
 echo "----------------------------------------"
 
-# Provide next steps based on what was installed
 if [ "$successful_installs" -gt 0 ]; then
     echo ""
     echo "💡 Next Steps & Reminders:"
-    for config_name in "${configs_to_process[@]}"; do
-        if [ "$config_name" == "nvim" ]; then
+    for config_name_processed in "${configs_to_process_names[@]}"; do
+        if [ "$config_name_processed" == "nvim" ]; then
             echo "  - For Neovim: Open 'nvim' and run your plugin manager's install/sync command (e.g., :Lazy sync if you use lazy.nvim)."
-        elif [ "$config_name" == "tmux" ]; then
+        elif [ "$config_name_processed" == "tmux" ]; then
             echo "  - For Tmux: If you use a plugin manager like TPM, start tmux and press 'Prefix + I' to install plugins."
-        # Add other specific post-installation messages here
-        # elif [ "$config_name" == "zshrc" ]; then
-        #     echo "  - For Zsh: You might need to source ~/.zshrc or open a new terminal."
+        elif [ "$config_name_processed" == "alacritty" ]; then
+            echo "  - For Alacritty: Ensure Alacritty terminal emulator is installed on your system. Changes should take effect on the next launch."
         fi
     done
     echo "  - Review any error messages above if installs failed."
-    echo "  - Ensure any necessary applications (Neovim, Tmux, Zsh, etc.) are installed on this system."
+    echo "  - Ensure any necessary applications (Neovim, Tmux, Alacritty, etc.) are installed on this system."
 fi
