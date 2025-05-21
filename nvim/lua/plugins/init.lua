@@ -12,8 +12,10 @@ return {
       require "configs.lspconfig"
     end,
   },
-
-  -- test new blink
+  {
+    "christoomey/vim-tmux-navigator", -- consistent splitting in vim and tmux
+  }
+  -- test new blin
   -- { import = "nvchad.blink.lazyspec" },
 
   -- {
