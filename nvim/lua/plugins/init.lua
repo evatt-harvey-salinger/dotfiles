@@ -14,7 +14,11 @@ return {
   },
   {
     "christoomey/vim-tmux-navigator", -- consistent splitting in vim and tmux
-  }
+  },
+  {
+    "github/copilot.vim",
+    -- event = "VeryLazy",
+  },
   -- test new blin
   -- { import = "nvchad.blink.lazyspec" },
 
