@@ -11,4 +11,3 @@ opt.relativenumber = true -- already set (toggle with <leader>rn)
 
 -- opt.background = "dark"
 -- pt.signcolumn = "yes"
-
