@@ -35,8 +35,12 @@ return {
         },
         -- Add other integrations as needed
       },
-      max_width_window_percentage = 70, -- Example: images won't exceed 70% of window width
-      max_height_window_percentage = 50, -- Example: images won't exceed 50% of window height
+      max_width = 100,
+      max_hight = 13,
+      max_width_window_percentage = math.huge, -- Example: images won't exceed 70% of window width
+      max_height_window_percentage = math.huge, -- Example: images won't exceed 50% of window height
+      window_overlap_clear_enabled = true,
+      window_overlap_clear_ft_ignore = { "cmp_menu", "cpm docs", ""},
       hijack_file_patterns = { "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.avif" }, -- Opens these files directly as images
       -- Optional: If you want to use the magick_rock processor later,
       -- you would change 'processor' and ensure LuaRocks setup.

@@ -1,0 +1,6 @@
+There are a lot of brew installs and external deps flying around. 
+
+These were required to image.nvim:
+- wezterm or kitty terminals
+- brew install imagemagick
+- brew install pkg-config
