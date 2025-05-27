@@ -15,6 +15,11 @@ local lazy_config = require "configs.lazy"
 
 -- load plugins
 require("lazy").setup({
+  rocks = {
+    hererocks = true, -- Recommended: Installs rocks locally to Neovim's data directory
+    fallback = true,  -- Optional: attempt to install via native package manager if rock fails
+    -- server = nil,  -- Optional: use a specific luarocks server
+  },
   {
     "NvChad/NvChad",
     lazy = false,
