@@ -6,7 +6,7 @@ TERM = "xterm-256color"
 padding.x = 10
 padding.y = 10
 
-decorations = "Buttonless"
+# decorations = "Buttonless"
 
 [font]
 normal.family = "MesloLGS Nerd Font Mono"
@@ -16,5 +16,5 @@ size = 13
 
 [general]
 import = [
-    "~/.config/alacritty/themes/themes/coolnight.toml"
+    "~/.config/alacritty/themes/themes/catppuccin_mocha.toml"
 ]
