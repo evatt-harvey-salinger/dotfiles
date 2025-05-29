@@ -12,7 +12,7 @@ padding.y = 10
 normal.family = "MesloLGS Nerd Font Mono"
 
 #regular
-size = 13
+size = 14
 
 [general]
 import = [
