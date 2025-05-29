@@ -13,10 +13,12 @@ return {
   {
     "christoomey/vim-tmux-navigator", -- consistent splitting in vim and tmux
     lazy = false,
+    enable = false,
   },
   {
     "github/copilot.vim",
     event = "VeryLazy",
+    enable = true,
   },
 
   -- Code Companion

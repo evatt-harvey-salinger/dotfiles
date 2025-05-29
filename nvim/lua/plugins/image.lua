@@ -2,6 +2,7 @@ return {
   {
     "3rd/image.nvim",
     event = "VeryLazy", -- Load when needed, e.g., when opening a markdown file
+    enabled = false,
     dependencies = {
       -- nvim-treesitter is managed by NvChad, but image.nvim needs its parsers
       "nvim-treesitter/nvim-treesitter",
