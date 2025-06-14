@@ -1,2 +1,2 @@
-brew install luarocks
 brew install lazygit
+brew install luarocks
