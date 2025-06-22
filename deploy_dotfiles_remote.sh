@@ -1,42 +1,48 @@
 #!/bin/bash
 
-# Script to deploy Neovim and Tmux configurations to a remote server via SSH.
+# Script to deploy your entire local dotfiles repository to a remote server via SSH.
+# It checks for and can install Neovim and Tmux on the remote,
+# and offers to install dependencies for image.nvim.
 
 # --- Configuration ---
 # Remote server user and host (e.g., "user@your_remote_host.com")
+# This variable must be provided as the first argument when running the script.
 REMOTE_SERVER=""
 
-# Local dotfiles directory (this script assumes it's run from within or next to your dotfiles repo)
-# Adjust DOTFILES_DIR if your script is not in the same directory as nvim and tmux.conf
+# Local dotfiles directory (dynamically determined based on script location)
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Define configurations to deploy
-declare -A CONFIGS_TO_DEPLOY=(
-  ["nvim"]=".config/nvim"
-  ["tmux.conf"]=".tmux.conf"
-  ["tmux_dir"]=".tmux" # Assuming .tmux directory for plugins etc.
-)
 
 # --- Helper Functions ---
 
+# Displays the script's usage instructions.
 usage() {
   echo "Usage: $0 <remote_server_user@host> [options]"
   echo ""
-  echo "Deploys specified dotfiles (Neovim, Tmux) to a remote server."
+  echo "Deploys your ENTIRE local dotfiles repository to a remote server."
+  echo "It also checks for and can install Neovim and Tmux on the remote."
   echo ""
   echo "Arguments:"
-  echo "  <remote_server_user@host> : The SSH connection string for your remote server (e.g., user@192.168.1.100)"
+  echo "  <remote_server_user@host> : The SSH connection string for your remote server"
+  echo "                            (e.g., user@192.168.1.100 or user@myjetson.local)"
   echo ""
   echo "Options:"
-  echo "  --dry-run, -n    : Perform a dry run (show what would be copied without actually copying)."
-  echo "  --force, -f      : Force overwrite of existing files on remote without confirmation (use with caution!)."
-  echo "  --help, -h       : Show this help message and exit."
+  echo "  --dest <path>, -d <path> : Specify a base destination directory on the remote server"
+  echo "                             (e.g., '--dest my_configs_repo' will deploy the dotfiles repo"
+  echo "                             to ~/my_configs_repo/dotfiles/). If not specified, the dotfiles"
+  echo "                             repository will be placed directly in ~/dotfiles/."
+  echo "  --dry-run, -n            : Perform a dry run (show what would be copied/installed without actual changes)."
+  echo "  --force, -f              : Force overwrite of existing files on remote without confirmation (use with caution!)."
+  echo "  --help, -h               : Show this help message and exit."
   echo ""
-  echo "Example: $0 user@myremoteserver.com"
-  echo "Example: $0 user@myremoteserver.com --dry-run"
+  echo "Example: $0 user@myjetson.local"
+  echo "Example: $0 user@myjetson.local --dest backup_repos"
+  echo "Example: $0 user@myjetson.local --dry-run"
   exit 1
 }
 
+# Prompts the user for confirmation for an action.
+# Argument 1: The message to display to the user.
+# Returns 0 for 'yes', 1 for 'no'.
 confirm_action() {
   local prompt_message="$1"
   if [[ "$FORCE_OVERWRITE" == "true" ]]; then
@@ -52,126 +58,243 @@ confirm_action() {
   fi
 }
 
+# Checks if a package is installed on the remote server and offers to install it if not.
+# Argument 1: The name of the package/command to check for (e.g., "nvim", "tmux").
+# Argument 2: The command to execute on the remote to install the package (e.g., "sudo apt install -y neovim").
+# Argument 3 (Optional): Alternate command to check for presence, if different from 'command -v package_name'.
+# Returns 0 if installed/successfully installed, 1 otherwise.
+check_and_install_remote_package() {
+  local package_name="$1"
+  local install_cmd="$2"
+  local check_cmd="${3:-command -v $package_name}"
+
+  echo ""
+  echo "--- Checking for '$package_name' on $REMOTE_SERVER ---"
+
+  if ssh "$REMOTE_SERVER" "$check_cmd" &>/dev/null; then
+    echo "✅ '$package_name' is already installed."
+    return 0
+  else
+    echo "❌ '$package_name' is NOT installed."
+    if confirm_action "Do you want to install '$package_name' on '$REMOTE_SERVER'? (Requires sudo privileges)"; then
+      if [[ "$DRY_RUN" == "true" ]]; then
+        echo "  (Dry run: Would execute: ssh $REMOTE_SERVER \"$install_cmd\")"
+        echo "  Please run this manually on the remote to install: $install_cmd"
+        return 1
+      else
+        echo "Attempting to install '$package_name'..."
+        echo "You may be prompted for your sudo password on the remote server."
+        if ssh -t "$REMOTE_SERVER" "$install_cmd"; then
+          echo "✅ '$package_name' installed successfully."
+          return 0
+        else
+          echo "❌ Failed to install '$package_name'. Check permissions/internet on remote."
+          return 1
+        fi
+      fi
+    else
+      echo "Skipping installation of '$package_name'."
+      return 1
+    fi
+  fi
+}
+
 # --- Main Logic ---
 
 DRY_RUN=false
 FORCE_OVERWRITE=false
+CUSTOM_REMOTE_BASE_DIR=""
 
-# Parse arguments
+# Parse command-line arguments
 if [ "$#" -eq 0 ]; then
   usage
 fi
 
+# Check for help option early
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  usage
+fi
+
 REMOTE_SERVER="$1"
-shift # Remove the first argument (remote server)
+shift
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
+  --dest | -d)
+    if [ -z "$2" ]; then
+      echo "❌ Error: --dest requires a path argument."
+      usage
+    fi
+    CUSTOM_REMOTE_BASE_DIR="$2"
+    shift
+    ;;
   --dry-run | -n)
     DRY_RUN=true
-    echo "ℹ️ Dry run mode enabled. No files will actually be copied."
+    echo "ℹ️ Dry run mode enabled. No files will actually be copied or installed."
     ;;
   --force | -f)
     FORCE_OVERWRITE=true
     echo "⚠️ Force overwrite mode enabled. Existing files on remote will be overwritten without prompt."
-    ;;
-  --help | -h)
-    usage
     ;;
   *)
     echo "❌ Error: Unknown option '$1'"
     usage
     ;;
   esac
-  shift # Move to the next argument
+  shift
 done
 
 echo "--- Dotfiles Deployment to Remote Server ---"
 echo "Remote Server: $REMOTE_SERVER"
 echo "Local Dotfiles Directory: $DOTFILES_DIR"
+if [ -n "$CUSTOM_REMOTE_BASE_DIR" ]; then
+  echo "Custom Remote Base Directory: ~/$CUSTOM_REMOTE_BASE_DIR"
+fi
 echo "------------------------------------------"
 
 # Pre-flight check: SSH connectivity
 echo "Checking SSH connectivity to $REMOTE_SERVER..."
 if ! ssh -q "$REMOTE_SERVER" exit; then
-  echo "❌ ERROR: Cannot connect to $REMOTE_SERVER via SSH. Please ensure SSH is working."
-  echo "         You might need to add your SSH key or check your SSH configuration."
+  echo "❌ ERROR: Cannot connect to $REMOTE_SERVER via SSH. Ensure SSH is working."
   exit 1
 fi
 echo "✅ SSH connection successful."
 
-# Confirm before proceeding
-if ! confirm_action "Do you want to proceed with deploying dotfiles to '$REMOTE_SERVER'? This will overwrite existing files."; then
-  echo "Deployment cancelled."
+# Confirm overall action
+if ! confirm_action "Proceed with checking dependencies and deploying your ENTIRE dotfiles repository to '$REMOTE_SERVER'? This will overwrite existing files."; then
+  echo "Deployment cancelled by user."
   exit 0
 fi
 
-for config_name in "${!CONFIGS_TO_DEPLOY[@]}"; do
-  LOCAL_PATH="${DOTFILES_DIR}/${config_name}"
-  REMOTE_TARGET_SUFFIX="${CONFIGS_TO_DEPLOY[$config_name]}"
-  REMOTE_TARGET_PATH="$REMOTE_SERVER:~/$REMOTE_TARGET_SUFFIX"
+# --- 1. Remote Dependency Check and Installation ---
+echo ""
+echo "--- Starting Remote Dependency Checks and Optional Installations ---"
+
+NEOVIM_INSTALLED_DURING_RUN=false
+TMUX_INSTALLED_DURING_RUN=false
+
+if check_and_install_remote_package "neovim" "sudo apt update && sudo apt install -y neovim"; then
+  NEOVIM_INSTALLED_DURING_RUN=true
+fi
+
+if check_and_install_remote_package "tmux" "sudo apt update && sudo apt install -y tmux"; then
+  TMUX_INSTALLED_DURING_RUN=true
+fi
+
+echo ""
+echo "--- Optional Dependencies for image.nvim ---"
+if confirm_action "Check/install additional dependencies for Neovim's image.nvim plugin (libmagickwand-dev, luajit, luarocks, magick LuaRock)?"; then
+  check_and_install_remote_package "libmagickwand-dev" "sudo apt update && sudo apt install -y libmagickwand-dev"
+  check_and_install_remote_package "luajit" "sudo apt update && sudo apt install -y luajit"
+  check_and_install_remote_package "luarocks" "sudo apt update && sudo apt install -y luarocks"
 
   echo ""
-  echo "--- Deploying $config_name ---"
-  echo "Source: $LOCAL_PATH"
-  echo "Target: $REMOTE_SERVER:~/$REMOTE_TARGET_SUFFIX"
-
-  if [ ! -e "$LOCAL_PATH" ]; then
-    echo "❌ WARNING: Local source path for '$config_name' not found: $LOCAL_PATH. Skipping."
-    continue
-  fi
-
-  # Create parent directory on remote if it doesn't exist
-  REMOTE_PARENT_DIR=$(dirname "$REMOTE_TARGET_SUFFIX")
-  if [[ "$REMOTE_PARENT_DIR" != "." ]]; then # Avoid trying to create '~/'
-    echo "Ensuring parent directory exists on remote: $REMOTE_SERVER:~/$REMOTE_PARENT_DIR"
-    if ! $DRY_RUN; then
-      ssh "$REMOTE_SERVER" "mkdir -p ~/$REMOTE_PARENT_DIR"
-      if [ $? -ne 0 ]; then
-        echo "❌ ERROR: Failed to create remote directory ~/$REMOTE_PARENT_DIR. Skipping $config_name."
-        continue
+  echo "--- Checking for 'magick' LuaRock (for image.nvim) ---"
+  if ssh "$REMOTE_SERVER" "luarocks show magick" &>/dev/null; then
+    echo "✅ 'magick' LuaRock is already installed."
+  else
+    echo "❌ 'magick' LuaRock is NOT installed."
+    if confirm_action "Install 'magick' LuaRock? (Requires 'luarocks' and sudo)"; then
+      if [[ "$DRY_RUN" == "true" ]]; then
+        echo "  (Dry run: Would execute: ssh $REMOTE_SERVER \"sudo luarocks install magick\")"
+        echo "  Please run this manually on the remote to install: sudo luarocks install magick"
+      else
+        echo "Attempting to install 'magick' LuaRock..."
+        if ssh -t "$REMOTE_SERVER" "sudo luarocks install magick"; then
+          echo "✅ 'magick' LuaRock installed successfully."
+        else
+          echo "❌ Failed to install 'magick' LuaRock. Check setup and sudo access."
+        fi
       fi
     else
-      echo "  (Dry run: Would create remote directory ~/$REMOTE_PARENT_DIR)"
+      echo "Skipping installation of 'magick' LuaRock."
     fi
   fi
+else
+  echo "Skipping checks/installations for image.nvim dependencies."
+fi
 
-  RSYNC_OPTIONS="-avh --progress"
-  if [ "$DRY_RUN" = true ]; then
-    RSYNC_OPTIONS+=" --dry-run"
-  fi
-  # Use --delete-after with caution if you want to mirror the directory exactly
-  # RSYNC_OPTIONS+=" --delete-after"
+# --- 2. Dotfiles Deployment ---
+echo ""
+echo "--- Starting Dotfiles Deployment ---"
+echo "This will copy your ENTIRE local dotfiles repository to the remote server."
 
-  echo "Running rsync command..."
-  if [ -d "$LOCAL_PATH" ]; then
-    # If it's a directory, ensure trailing slash for rsync to copy contents
-    rsync $RSYNC_OPTIONS "$LOCAL_PATH/" "$REMOTE_SERVER:~/$REMOTE_TARGET_SUFFIX/"
+REMOTE_REPO_BASE_NAME="$(basename "$DOTFILES_DIR")"
+if [ -n "$CUSTOM_REMOTE_BASE_DIR" ]; then
+  REMOTE_FULL_TARGET_DIR="~/$CUSTOM_REMOTE_BASE_DIR/$REMOTE_REPO_BASE_NAME"
+else
+  REMOTE_FULL_TARGET_DIR="~/$REMOTE_REPO_BASE_NAME"
+fi
+REMOTE_RSYNC_TARGET="${REMOTE_SERVER}:${REMOTE_FULL_TARGET_DIR}"
+
+echo "Local Source: $DOTFILES_DIR/"
+echo "Remote Target: $REMOTE_RSYNC_TARGET/"
+
+# Create parent directory for the dotfiles repository on the remote
+REMOTE_PARENT_DIR_FOR_REPO=$(dirname "$REMOTE_FULL_TARGET_DIR")
+if [[ "$REMOTE_PARENT_DIR_FOR_REPO" != "~" && "$REMOTE_PARENT_DIR_FOR_REPO" != "." ]]; then
+  echo "Ensuring parent directory for dotfiles repo exists on remote: $REMOTE_PARENT_DIR_FOR_REPO"
+  if ! $DRY_RUN; then
+    LOCAL_RELATIVE_PARENT_DIR="${REMOTE_PARENT_DIR_FOR_REPO#\~/}"
+    ssh "$REMOTE_SERVER" "mkdir -p ~/$LOCAL_RELATIVE_PARENT_DIR"
+    if [ $? -ne 0 ]; then
+      echo "❌ ERROR: Failed to create remote directory ~/$LOCAL_RELATIVE_PARENT_DIR. Skipping dotfiles deployment."
+      exit 1
+    fi
   else
-    # If it's a file
-    rsync $RSYNC_OPTIONS "$LOCAL_PATH" "$REMOTE_SERVER:~/$REMOTE_TARGET_SUFFIX"
+    echo "  (Dry run: Would create remote directory ~/${REMOTE_PARENT_DIR_FOR_REPO#\~/})"
   fi
+fi
 
-  if [ $? -eq 0 ]; then
-    echo "✅ Successfully synced '$config_name'."
-  else
-    echo "❌ ERROR: Failed to sync '$config_name'. See output above."
-  fi
-done
+RSYNC_OPTIONS="-avh --progress --checksum --delete-after"
+if [ "$DRY_RUN" = true ]; then
+  RSYNC_OPTIONS+=" --dry-run"
+fi
+
+echo "Executing rsync command for entire dotfiles directory..."
+if rsync $RSYNC_OPTIONS "$DOTFILES_DIR/" "$REMOTE_RSYNC_TARGET/"; then
+  echo "✅ Successfully synced entire dotfiles repository."
+else
+  echo "❌ ERROR: Failed to sync dotfiles repository. See output above for details."
+  exit 1
+fi
 
 echo ""
-echo "--- Deployment Complete ---"
-echo "Next Steps (on the remote server):"
-echo "💡 For Neovim:"
+echo "--- Deployment Process Complete ---"
+echo "Next Steps (to be performed manually on the remote server):"
+
+echo "Your entire local dotfiles repository has been deployed to:"
+echo "  $REMOTE_FULL_TARGET_DIR/"
+echo ""
+echo "You will likely need to create symbolic links (symlinks) from this location"
+echo "to the standard configuration locations on your remote system. For example:"
+echo "  ssh $REMOTE_SERVER"
+echo "  mkdir -p ~/.config"
+echo "  ln -sf $REMOTE_FULL_TARGET_DIR/nvim ~/.config/nvim"
+echo "  ln -sf $REMOTE_FULL_TARGET_DIR/tmux.conf ~/.tmux.conf"
+echo "  ln -sf $REMOTE_FULL_TARGET_DIR/.tmux ~/.tmux"
+echo ""
+
+if [ "$NEOVIM_INSTALLED_DURING_RUN" = true ]; then
+  echo "💡 Neovim was just installed. After creating the symlink, ensure you open Neovim and install plugins."
+fi
+echo "For Neovim configuration to take full effect (after symlinking):"
 echo "   1. SSH into the remote server: ssh $REMOTE_SERVER"
-echo "   2. Open nvim: nvim"
-echo "   3. Run your plugin manager's install/sync command (e.g., :Lazy sync for lazy.nvim)."
-echo ""
-echo "💡 For Tmux:"
-echo "   1. If you use TPM (Tmux Plugin Manager), ensure it's installed (it should be in ~/.tmux/plugins/tpm if you followed your local setup)."
+echo "   2. Open Neovim: nvim"
+echo "   3. Run your plugin manager's install/sync command (e.g., :Lazy sync)."
+
+if [ "$TMUX_INSTALLED_DURING_RUN" = true ]; then
+  echo "💡 Tmux was just installed. After creating the symlink, ensure you install TPM plugins."
+fi
+echo "For Tmux configuration to take full effect (after symlinking):"
+echo "   1. Ensure TPM is cloned/installed (expected at ~/.tmux/plugins/tpm, which will be symlinked)."
 echo "   2. Start tmux: tmux"
-echo "   3. Inside tmux, press your prefix key (Ctrl+a by default if you use your .tmux.conf) then 'I' (capital i) to install/sync plugins."
-echo "   4. If you had an existing tmux session, you might need to kill it and restart for changes to take full effect, or just source the config: tmux source-file ~/.tmux.conf"
+echo "   3. Inside tmux, press your prefix key (Ctrl+a by default) then 'I' (capital i) to install/sync plugins."
+echo "   4. If you had an existing tmux session, kill it and restart, or source the config: tmux source-file ~/.tmux.conf"
+
 echo ""
-echo "Consider restarting your terminal session on the remote server or launching new ones to ensure all changes take effect."
+echo "Additional Important Notes:"
+echo "  - Nerd Fonts: Install Nerd Fonts on your *local* machine for proper display."
+echo "  - Manual Verification: Review script output and manually verify configurations on the remote."
+echo "  - Internet Access: Ensure your Jetson has internet access for $(apt) and $(luarocks) installations."
 echo "------------------------------------------"

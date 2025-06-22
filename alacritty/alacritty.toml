@@ -1,10 +1,13 @@
 
-[ env ]
+[env]
 TERM = "xterm-256color"
 
 [window]
 padding.x = 10
 padding.y = 10
+
+# On macOS, treat the Option key as the Alt modifier.
+option_as_alt = "Both"
 
 # decorations = "Buttonless"
 
@@ -15,6 +18,19 @@ normal.family = "MesloLGS Nerd Font Mono"
 size = 14
 
 [general]
-import = [
-    "~/.config/alacritty/themes/themes/catppuccin_mocha.toml"
-]
+import = ["~/.config/alacritty/themes/themes/catppuccin_mocha.toml"]
+
+# [keyboard]
+# bindings = [
+#   # (macOS) Option + Left Arrow -> Go back one word
+#   { key = "Left", mods = "Alt", chars = "\\x1bb" },
+#
+#   # (macOS) Option + Right Arrow -> Go forward one word
+#   { key = "Right", mods = "Alt", chars = "\\x1bf" },
+#
+#   # (Linux/Windows) Ctrl + Left Arrow -> Go back one word
+#   { key = "Left", mods = "Control", chars = "\\x1bb" },
+#
+#   # (Linux/Windows) Ctrl + Right Arrow -> Go forward one word
+#   { key = "Right", mods = "Control", chars = "\\x1bf" },
+# ]
