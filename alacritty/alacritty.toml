@@ -18,3 +18,8 @@ size = 14
 import = [
     "~/.config/alacritty/themes/themes/catppuccin_mocha.toml"
 ]
+
+[[keyboard.bindings]]
+chars = "\u001B[13;2u"
+key = "Return"
+mods = "Shift"
