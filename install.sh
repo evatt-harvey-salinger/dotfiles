@@ -22,9 +22,10 @@ add_config() {
 }
 
 # Define your configurations here:
+add_config "opencode" "opencode" ".config/opencode"
 # add_config "<name>" "<path_in_dotfiles_repo>" "<target_path_for_symlink_in_home>"
 add_config "nvim" "nvim" ".config/nvim"
-add_config "tmux-conf" "tmux.conf" ".tmux.conf" # Tmux configuration file
+add_config "tmux-conf" "tmux/tmux.conf" ".tmux.conf" # Tmux configuration file
 add_config "tmux-dir" ".tmux" ".tmux"         # Tmux directory (for plugins, etc.)
 add_config "alacritty" "alacritty" ".config/alacritty" # Assumes ~/dotfiles/alacritty directory
 
