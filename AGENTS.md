@@ -24,8 +24,19 @@
 
 ## Additional Notes
 
+## Cursor and Copilot Rules
+
 - No Cursor rules or Copilot instructions found in the repo
 - Follow existing patterns in `nvim/lua/kickstart/plugins` for new plugin configs
+
+## Install Script Design Blueprint
+
+- Modular script structure for easy extension to other apps
+- Idempotent operations to avoid redundant installs or changes
+- Environment and dependency checks before proceeding
+- Clear, informative logging and user feedback during install
+- Use of standard shell tools and minimal external dependencies
+- Consistent error handling and exit codes for reliability
 
 ---
 
