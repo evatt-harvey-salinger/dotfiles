@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to symlink Tmux dotfiles from this repository to their correct locations.
+# Script to symlink Opencode dotfiles from this repository to their correct locations.
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -19,8 +19,8 @@ add_config() {
     config_targets+=("$HOME/$target_suffix")
 }
 
-# Define Tmux configurations here:
-add_config "tmux-conf" "tmux.conf" ".config/tmux/tmux.conf" # Tmux configuration file
+# Define Opencode configurations here:
+add_config "opencode" "." ".config/opencode"
 
 # --- Helper Functions ---
 create_symlink() {
@@ -68,7 +68,8 @@ create_symlink() {
 }
 
 # --- Main Logic ---
-echo "🚀 Installing Tmux configurations..."
+echo "🚀 Installing Opencode configurations..."
+mkdir -p "$HOME/.config" # Ensure .config exists, common parent for many configs
 
 successful_installs=0
 failed_installs=0
@@ -88,7 +89,7 @@ for i in "${!config_names[@]}"; do
 done
 
 echo "----------------------------------------"
-echo "✅ Tmux Installation Process Complete!"
+echo "✅ Opencode Installation Process Complete!"
 echo "Summary:"
 echo "  Successfully linked: $successful_installs configuration(s)."
 if [ "$failed_installs" -gt 0 ]; then
@@ -99,7 +100,5 @@ echo "----------------------------------------"
 if [ "$successful_installs" -gt 0 ]; then
     echo ""
     echo "💡 Next Steps & Reminders:"
-    echo "  - For Tmux: If you use a plugin manager like TPM (expected to be in ~/.tmux/plugins/tpm), start tmux and press 'Prefix + I' to install plugins. Ensure your ~/.tmux.conf is set up to source these plugins."
     echo "  - Review any error messages above if installs failed."
 fi
-

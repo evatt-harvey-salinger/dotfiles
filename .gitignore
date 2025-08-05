@@ -1,3 +1,4 @@
 # ignore installed plugins
 .tmux/plugins/
 .aider*
+*.bak*

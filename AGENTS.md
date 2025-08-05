@@ -31,6 +31,8 @@
 
 ## Install Script Design Blueprint
 
+- Each app has a configuration and an installation script
+- All installations should link the configuration files to the `$HOME/.config` folder
 - Modular script structure for easy extension to other apps
 - Idempotent operations to avoid redundant installs or changes
 - Environment and dependency checks before proceeding
