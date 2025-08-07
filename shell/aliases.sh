@@ -1,6 +1,6 @@
 # File listing aliases
 alias ll='ls -alF'
-alias lrt='ls -lrt'
+alias lt='ls -lrt'
 alias la='ls -A'
 alias l='ls -CF'
 
