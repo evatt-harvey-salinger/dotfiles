@@ -17,3 +17,4 @@ fi
 
 source "$DOTFILES_SHELL_DIR/vi_mode.sh"
 source "$DOTFILES_SHELL_DIR/aliases.sh"
+source "$DOTFILES_SHELL_DIR/git.sh"
