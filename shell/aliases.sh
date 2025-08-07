@@ -1,3 +1,17 @@
+# Reload shell configuration
+reload() {
+  if [ -n "$BASH_VERSION" ]; then
+    source ~/.bashrc
+    echo "Bash configuration reloaded."
+  elif [ -n "$ZSH_VERSION" ]; then
+    source ~/.zshrc
+    echo "Zsh configuration reloaded."
+  else
+    echo "Unsupported shell."
+  fi
+}
+alias r='reload'
+
 # File listing aliases
 alias ll='ls -alF'
 alias lt='ls -lrt'
