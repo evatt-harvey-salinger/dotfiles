@@ -37,6 +37,11 @@ alias t='tree -L 1'
 # Custom command alias
 alias oc='opencode'
 
+# Bash specific alias
+if [ -n "$BASH_VERSION" ]; then
+  alias r='fc -s'
+fi
+
 # SSH shortcuts
 alias ssh-d="ssh evatt_harvey-salinger@A1014"
 alias ssh-g="ssh evatt@gamer"
