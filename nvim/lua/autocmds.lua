@@ -1,5 +1,5 @@
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "markdown", "toml" },
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'markdown', 'toml', 'lua' },
   callback = function()
     vim.o.tabstop = 2
     vim.o.shiftwidth = 2
@@ -7,8 +7,8 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "python" },
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'python' },
   callback = function()
     vim.o.tabstop = 4
     vim.o.shiftwidth = 4
