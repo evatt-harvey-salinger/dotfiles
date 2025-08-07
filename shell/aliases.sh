@@ -10,7 +10,7 @@ reload() {
     echo "Unsupported shell."
   fi
 }
-alias r='reload'
+alias src='reload'
 
 # File listing aliases
 alias ll='ls -alF'
