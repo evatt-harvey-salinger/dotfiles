@@ -34,6 +34,12 @@ alias vd='deactivate'
 # Directory tree listing
 alias t='tree -L 1'
 
+# Tar Aliases
+alias ziptar='tar -cvf'  # Create a .tar archive
+alias unziptar='tar -xvf'  # Extract a .tar archive
+alias ziptargz='tar -czvf' # Create a .tar.gz archive
+alias unziptargz='tar -xzvf' # Extract a .tar.gz archive
+
 # Custom command alias
 alias oc='opencode'
 
