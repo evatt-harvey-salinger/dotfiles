@@ -1,7 +1,7 @@
 ---
 description: Retrieves, summarizes, and saves documentation from the web or local files.
 mode: subagent
-model: openai/gpt-4o
+model: openai/gpt-5-mini
 temperature: 0.2
 tools:
   bash: true
