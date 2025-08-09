@@ -32,7 +32,7 @@ alias va='source ./.venv/bin/activate'
 alias vd='deactivate'
 
 # Directory tree listing
-alias t='tree -L 1'
+alias t='tree -a -L 1'
 
 # Tar Aliases
 alias ziptar='tar -cvf'  # Create a .tar archive
