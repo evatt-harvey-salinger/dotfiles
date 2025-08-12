@@ -12,12 +12,24 @@ return {
         styles = {
           comments = { italic = false }, -- Disable italics in comments
         },
+        -- -- NOT WORKING
+        -- on_highlights = function(highlights, colors)
+        --   highlights.VertSplit = {
+        --     -- fg = colors.fg_dark,
+        --     fg = colors.fg_gutter,
+        --     bg = colors.none,
+        --   }
+        --   highlights.WinSeparator = {
+        --     fg = colors.border,
+        --     bg = colors.none,
+        --   }
+        -- end,
       }
 
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'tokyonight-moon'
     end,
   },
 }

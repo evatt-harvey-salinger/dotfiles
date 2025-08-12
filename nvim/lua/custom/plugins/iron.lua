@@ -40,7 +40,8 @@ return {
         end,
 
         -- Open repl in a right-side vertical split with 40 columns
-        repl_open_cmd = view.split.vertical.rightbelow '40%',
+        -- repl_open_cmd = view.split.vertical.rightbelow '40%',
+        repl_open_cmd = view.split.horizontal.rightbelow '30%',
       },
 
       -- Map iron's named maps to your requested <leader>r... prefix so they don't conflict
