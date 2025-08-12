@@ -10,7 +10,7 @@ git config --global init.defaultBranch main
 git config --global core.editor "nvim"
 
 # Add some useful aliases to save typing
-git config --global alias.st '!git fetch -q && git status'
+git config --global alias.st '!git fetch -q && git status .'
 git config --global alias.co checkout
 git config --global alias.br branch
 git config --global alias.ci commit
