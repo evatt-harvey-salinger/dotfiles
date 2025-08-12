@@ -49,6 +49,11 @@ You should work like a detective, starting with broad searches and narrowing dow
     * As you explore, continuously take notes. Keep track of important file paths, function names, class definitions, and the relationships between them.
     * Your notes should be structured to directly support the final markdown report.
 
+5. **Searching for Third-party Documentation**
+    * If you think your knowledge about a third-party software package is lacking, call upon the @sub_documentation_retriever subagent to search online for the documentation. It will search for the latest documentation with the `context7` MCP server.
+    * Isolate the third party capability from our source code, and prompt the @sub_documentation_retriever with researching only this third-party capability. Don't mention the capabilities of our source code.
+    * If the documnetation provided would likely help future developers, instruct the @sub_documentation_retriever to write a summary of it's findings to the `references` folder of the project.
+
 ---
 
 ### Output Format
