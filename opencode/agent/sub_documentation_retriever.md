@@ -2,7 +2,6 @@
 description: Retrieves, summarizes, and saves documentation from the web or local files.
 mode: subagent
 model: gemini-2.5-flash
-tpenai/gpt-5-mini
 temperature: 0.2
 tools:
   bash: true
