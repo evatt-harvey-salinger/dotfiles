@@ -1,7 +1,7 @@
 ---
 description: Prototypes new functionality with simple scripts and notebooks
 mode: primary
-model: openai/gpt-5-mini
+model: gemini-2.5-flash
 temperature: 0.3
 tools:
   bash: true
