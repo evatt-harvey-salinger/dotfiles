@@ -20,7 +20,29 @@ add_config() {
 }
 
 # Define Tmux configurations here:
-add_config "tmux-conf" "tmux.conf" ".config/tmux/tmux.conf" # Tmux configuration file
+
+# Function to get Tmux version
+get_tmux_version() {
+    if command -v tmux &> /dev/null; then
+        tmux -V | grep -oE '[0-9]+\.[0-9]+'
+    else
+        echo "0.0" # Return a low version if tmux is not found
+    fi
+}
+
+# Determine Tmux configuration target based on version
+TMUX_VERSION=$(get_tmux_version)
+TMUX_CONFIG_TARGET=".config/tmux/tmux.conf"
+
+if (( $(echo "$TMUX_VERSION < 3.1" | bc -l) )); then
+    echo "Detected Tmux version $TMUX_VERSION, which is less than 3.1. Symlinking to ~/$TMUX_CONFIG_TARGET and ~/.config/tmux/tmux.conf"
+    TMUX_CONFIG_TARGET=".tmux.conf"
+    add_config "tmux-conf-legacy-path" "tmux.conf" "$TMUX_CONFIG_TARGET" # Tmux configuration file for older versions
+    add_config "tmux-conf-config-path" "tmux.conf" ".config/tmux/tmux.conf" # Tmux configuration file for reload command
+else
+    echo "Detected Tmux version $TMUX_VERSION, which is 3.1 or higher. Symlinking to ~/.config/tmux/tmux.conf"
+    add_config "tmux-conf" "tmux.conf" "$TMUX_CONFIG_TARGET" # Tmux configuration file
+fi
 
 # --- Helper Functions ---
 create_symlink() {
@@ -96,10 +118,67 @@ if [ "$failed_installs" -gt 0 ]; then
 fi
 echo "----------------------------------------"
 
+# --- TPM Installation ---
+TPM_PATH="$HOME/.config/tmux/tpm"
+
+install_tpm() {
+    echo "Checking for Tmux Plugin Manager (TPM)..."
+    if [ -d "$TPM_PATH" ]; then
+        echo "✔ TPM already installed at $TPM_PATH."
+    else
+        echo "🔧 Installing TPM to $TPM_PATH..."
+        mkdir -p "$(dirname "$TPM_PATH")"
+        if git clone https://github.com/tmux-plugins/tpm "$TPM_PATH"; then
+            echo "✅ TPM installed successfully."
+        else
+            echo "❌ ERROR: Failed to clone TPM. Please check your internet connection or git setup."
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# --- Main Logic ---
+echo "🚀 Installing Tmux configurations..."
+
+successful_installs=0
+failed_installs=0
+
+# Install TPM first
+if install_tpm; then
+    echo "---"
+else
+    failed_installs=$((failed_installs + 1))
+    echo "TPM installation failed, proceeding with other configurations but plugins might not load."
+    echo "---"
+fi
+
+for i in "${!config_names[@]}"; do
+    name="${config_names[$i]}"
+    source="${config_sources[$i]}"
+    target="${config_targets[$i]}"
+
+    echo "Processing '$name'..."
+    if create_symlink "$source" "$target" "$name"; then
+        successful_installs=$((successful_installs + 1))
+    else
+        failed_installs=$((failed_installs + 1))
+    fi
+    echo "---"
+done
+
+echo "----------------------------------------"
+echo "✅ Tmux Installation Process Complete!"
+echo "Summary:"
+echo "  Successfully linked: $successful_installs configuration(s)."
+if [ "$failed_installs" -gt 0 ]; then
+    echo "  Failed/Skipped links: $failed_installs configuration(s) (see error messages above)."
+fi
+
 if [ "$successful_installs" -gt 0 ]; then
     echo ""
     echo "💡 Next Steps & Reminders:"
-    echo "  - For Tmux: If you use a plugin manager like TPM (expected to be in ~/.tmux/plugins/tpm), start tmux and press 'Prefix + I' to install plugins. Ensure your ~/.tmux.conf is set up to source these plugins."
+    echo "  - For Tmux: Start tmux and press 'Prefix + I' to install plugins."
     echo "  - Review any error messages above if installs failed."
 fi
 
