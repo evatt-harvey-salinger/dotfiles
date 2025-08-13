@@ -40,6 +40,9 @@
 - Use of standard shell tools and minimal external dependencies
 - Consistent error handling and exit codes for reliability
 
+## Things not to do
+
+- Never commit or push this repository. I will do it myself.
 ---
 
 This file is intended to guide autonomous agents working in this repository.

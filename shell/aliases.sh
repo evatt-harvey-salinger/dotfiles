@@ -43,10 +43,17 @@ alias unziptargz='tar -xzvf' # Extract a .tar.gz archive
 # Custom command alias
 alias oc='opencode'
 
-# Bash specific alias
+# Execute second-to-last command
 if [ -n "$BASH_VERSION" ]; then
-  alias r='fc -s'
+  # alias r='fc -s'
+  r() {
+    fc -s
+  }
 fi
+# Re-execute second-to-last command
+rr() {
+    fc -s -2
+}
 
 # SSH shortcuts
 alias ssh-d="ssh evatt_harvey-salinger@A1014"
