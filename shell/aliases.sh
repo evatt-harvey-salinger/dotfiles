@@ -30,9 +30,11 @@ alias tmuxk='tmux kill-session -t'
 # Python virtual environment aliases
 alias va='source ./.venv/bin/activate'
 alias vd='deactivate'
+alias condad='conda deactivate'
 
 # Directory tree listing
 alias t='tree -a -L 1'
+alias tt='tree -at -L 1'
 
 # Tar Aliases
 alias ziptar='tar -cvf'  # Create a .tar archive
